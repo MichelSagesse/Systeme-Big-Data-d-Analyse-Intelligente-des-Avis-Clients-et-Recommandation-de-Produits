@@ -1,0 +1,216 @@
+/* ===== VARIABLES ===== */
+:root {
+  --primary: #3498db;
+  --primary-dark: #2980b9;
+  --secondary: #2ecc71;
+  --secondary-dark: #27ae60;
+  --danger: #e74c3c;
+  --danger-dark: #c0392b;
+  --warning: #f39c12;
+  --warning-dark: #e67e22;
+  --dark: #2c3e50;
+  --dark-light: #34495e;
+  --light: #ecf0f1;
+  --light-dark: #bdc3c7;
+  --white: #ffffff;
+  --gray: #95a5a6;
+}
+
+/* ===== BASE STYLES ===== */
+.stApp {
+  background-color: #f8f9fa;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: var(--dark);
+}
+
+/* ===== HEADERS ===== */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--dark);
+  margin-top: 1.5rem;
+}
+
+h1 {
+  border-bottom: 2px solid var(--primary);
+  padding-bottom: 10px;
+}
+
+/* ===== SIDEBAR ===== */
+.stSidebar {
+  background-color: var(--dark) !important;
+}
+
+.sidebar .sidebar-content {
+  background-color: var(--dark) !important;
+  color: var(--white) !important;
+}
+
+.stSidebar h2 {
+  color: var(--white) !important;
+  text-align: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--light);
+  padding-bottom: 10px;
+}
+
+/* ===== BUTTONS ===== */
+.stButton>button {
+  background-color: var(--primary);
+  color: var(--white);
+  border-radius: 5px;
+  padding: 10px 24px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.stButton>button:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stDownloadButton>button {
+  background-color: var(--secondary) !important;
+}
+
+.stDownloadButton>button:hover {
+  background-color: var(--secondary-dark) !important;
+}
+
+/* ===== INPUTS ===== */
+.stTextInput>div>div>input, 
+.stTextArea>div>div>textarea {
+  border-radius: 5px;
+  border: 1px solid var(--light-dark);
+  padding: 10px;
+}
+
+.stTextArea>div>div>textarea {
+  min-height: 150px;
+}
+
+/* ===== CARDS & METRICS ===== */
+.metric-card {
+  background-color: var(--white);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-left: 5px solid var(--primary);
+}
+
+.metric-card h3 {
+  margin-top: 0;
+  color: var(--dark);
+  font-size: 1.1rem;
+}
+
+.metric-card h2 {
+  color: var(--primary);
+  margin-bottom: 0;
+  font-size: 1.8rem;
+}
+
+/* ===== DATA DISPLAY ===== */
+.stDataFrame {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.stTable {
+  border-radius: 8px;
+}
+
+/* ===== TABS ===== */
+.stTabs [role="tablist"] {
+  margin-bottom: 20px;
+}
+
+.stTabs [role="tab"] {
+  padding: 10px 20px;
+  border-radius: 5px 5px 0 0;
+  background-color: #f1f1f1;
+  margin-right: 5px;
+  transition: all 0.3s ease;
+}
+
+.stTabs [aria-selected="true"] {
+  background-color: var(--primary);
+  color: var(--white);
+}
+
+/* ===== PROGRESS ===== */
+.stProgress>div>div>div>div {
+  background-color: var(--primary) !important;
+}
+
+/* ===== ALERTS ===== */
+.stAlert {
+  border-radius: 8px;
+}
+
+.stAlert-success {
+  background-color: rgba(46, 204, 113, 0.1) !important;
+  border-left: 4px solid var(--secondary);
+}
+
+.stAlert-error {
+  background-color: rgba(231, 76, 60, 0.1) !important;
+  border-left: 4px solid var(--danger);
+}
+
+.stAlert-warning {
+  background-color: rgba(243, 156, 18, 0.1) !important;
+  border-left: 4px solid var(--warning);
+}
+
+/* ===== EXPANDER ===== */
+.stExpander {
+  border: 1px solid var(--light-dark);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 15px;
+}
+
+/* ===== SENTIMENT SPECIFIC ===== */
+.positive {
+  color: var(--secondary);
+  border-left-color: var(--secondary) !important;
+}
+
+.negative {
+  color: var(--danger);
+  border-left-color: var(--danger) !important;
+}
+
+.neutral {
+  color: var(--warning);
+  border-left-color: var(--warning) !important;
+}
+
+/* ===== UTILITY CLASSES ===== */
+.text-center {
+  text-align: center;
+}
+
+.shadow-sm {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.rounded {
+  border-radius: 8px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .stDataFrame {
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  .metric-card {
+    padding: 15px;
+  }
+}

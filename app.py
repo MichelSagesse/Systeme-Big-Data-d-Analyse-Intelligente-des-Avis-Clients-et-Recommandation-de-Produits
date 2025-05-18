@@ -45,39 +45,19 @@ st.set_page_config(
     page_icon=":mag:"
 )
 
-# Custom CSS
-st.markdown("""
-<style>
-    .main {
-        background-color: #f8f9fa;
-    }
-    .sidebar .sidebar-content {
-        background-color: #343a40;
-        color: white;
-    }
-    h1, h2, h3 {
-        color: #2c3e50;
-    }
-    .stButton>button {
-        background-color: #4CAF50;
-        color: white;
-        border-radius: 5px;
-        padding: 10px 24px;
-    }
-    .stTextInput>div>div>input, .stTextArea>div>div>textarea {
-        border-radius: 5px;
-    }
-    .stProgress>div>div>div>div {
-        background-color: #4CAF50;
-    }
-    .metric {
-        border-radius: 5px;
-        padding: 15px;
-        background-color: white;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-</style>
-""", unsafe_allow_html=True)
+def load_css():
+    # Chemin vers votre fichier CSS
+    css_file = os.path.join(os.path.dirname(__file__), "style.css")
+    
+    # Vérifie si le fichier existe
+    if os.path.exists(css_file):
+        with open(css_file) as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    else:
+        st.warning("Fichier CSS non trouvé, utilisation des styles par défaut")
+
+# Appelez cette fonction après st.set_page_config()
+load_css()
 
 # Setup SparkSession
 @st.cache_resource
@@ -357,13 +337,13 @@ if uploaded_file:
     elif choice == "😊 Analyse de Sentiment":
         st.header("💬 Analyse de Sentiment")
         st.image("https://cdn-icons-png.flaticon.com/512/1995/1995488.png", width=100)
-        
+
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
             Analysez la polarité des avis en fonction des notes attribuées.
             Visualisez la distribution des sentiments et des notes.
             """)
-        
+
         if st.button("📊 Analyser les sentiments"):
             with st.spinner("Calcul des sentiments..."):
                 df_sentiment = df.withColumn("Sentiment",
@@ -374,38 +354,37 @@ if uploaded_file:
                 pandas_df = df_sentiment.toPandas()
 
             col1, col2 = st.columns(2)
-            
+
             with col1:
                 st.subheader("Distribution des Sentiments")
                 fig = px.pie(pandas_df, names="Sentiment", 
                             color="Sentiment",
                             color_discrete_map={"Positive":"#2ecc71","Negative":"#e74c3c","Neutral":"#f39c12"})
                 st.plotly_chart(fig, use_container_width=True)
-            
+
             with col2:
                 st.subheader("Distribution des Notes")
-                fig = px.histogram(pandas_df, x="reviews.rating", 
-                                 nbins=6, color="reviews.rating",
-                                 color_continuous_scale="Bluered")
+                fig = px.histogram(pandas_df, x="reviews.rating", nbins=6)
                 st.plotly_chart(fig, use_container_width=True)
 
             # Analyse par produit
             st.subheader("📦 Analyse par Produit (ASIN)")
-            
+
             asin_count = pandas_df["asins"].value_counts()
             top_asins = asin_count.nlargest(10).index
-            
+
             tab1, tab2 = st.tabs(["Fréquence des ASINs", "Notes moyennes par ASIN"])
-            
+
             with tab1:
                 fig = px.bar(asin_count.nlargest(10), 
                             title="Top 10 ASINs par nombre d'avis")
                 st.plotly_chart(fig, use_container_width=True)
-            
+
             with tab2:
                 avg_rating = pandas_df.groupby("asins")["reviews.rating"].mean().loc[top_asins]
                 fig = px.bar(avg_rating, title="Note moyenne des top 10 ASINs")
                 st.plotly_chart(fig, use_container_width=True)
+
 
     elif choice == "✂️ Traitement du texte":
         st.header("📝 Prétraitement du texte")
