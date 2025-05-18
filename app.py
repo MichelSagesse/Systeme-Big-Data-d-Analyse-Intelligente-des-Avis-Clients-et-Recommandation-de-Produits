@@ -381,6 +381,10 @@ if uploaded_file:
                 st.plotly_chart(fig, use_container_width=True)
 
             with tab2:
+                # Conversion de la colonne en numérique
+                pandas_df['reviews.rating'] = pd.to_numeric(pandas_df['reviews.rating'], errors='coerce')
+
+                # Puis le groupby et mean
                 avg_rating = pandas_df.groupby("asins")["reviews.rating"].mean().loc[top_asins]
                 fig = px.bar(avg_rating, title="Note moyenne des top 10 ASINs")
                 st.plotly_chart(fig, use_container_width=True)
