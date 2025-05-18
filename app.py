@@ -38,6 +38,7 @@ from pyspark.ml.classification import LogisticRegression
 from pyspark.ml import Pipeline
 from pyspark.sql.types import  StringType, ArrayType
 from pyspark.sql import functions as F
+import os
 
 # Setup Streamlit
 st.set_page_config(page_title="Web Mining & Text Analysis", layout="wide")
@@ -195,33 +196,42 @@ if uploaded_file:
                 col("rating").cast("float")
             )
 
-            # Supprimer les lignes où rating est NaN ou NULL
             ratings = ratings.filter(col("rating").isNotNull())
-
-            # Split train/test (utile pour évaluation)
             train_data, test_data = ratings.randomSplit([0.8, 0.2], seed=42)
 
-           # Charger le modèle déjà entraîné (changer le chemin vers le bon dossier)
-            model = ALSModel.load("als_best_model")
+            try:
+                working_dir = os.path.dirname(os.path.abspath(__file__))
+                model_path = os.path.join(working_dir, "als_best_model")
 
-            predictions = model.transform(test_data)
-            evaluator = RegressionEvaluator(metricName="rmse", labelCol="rating", predictionCol="prediction")
+                model = ALSModel.load(model_path)
 
-            rmse = evaluator.evaluate(predictions)
-            st.success(f"RMSE sur le jeu de test : {rmse:.3f}")
+                predictions = model.transform(test_data)
+                evaluator = RegressionEvaluator(metricName="rmse", labelCol="rating", predictionCol="prediction")
 
-            userRecs = model.recommendForAllUsers(5)
-            userRecs_pd = userRecs.limit(20).toPandas()
+                rmse = evaluator.evaluate(predictions)
+                st.success(f"RMSE sur le jeu de test : {rmse:.3f}")
 
-            st.dataframe(userRecs_pd)
+                # Générer et afficher les recommandations
+                userRecs = model.recommendForAllUsers(5)
+                userRecs_pd = userRecs.limit(20).toPandas()
 
-            csv = userRecs_pd.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="📥 Télécharger les recommandations CSV",
-                data=csv,
-                file_name='recommandations_als.csv',
-                mime='text/csv'
-            )
+                st.dataframe(userRecs_pd)
+
+                csv = userRecs_pd.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📥 Télécharger les recommandations CSV",
+                    data=csv,
+                    file_name='recommandations_als.csv',
+                    mime='text/csv'
+                )
+
+            except FileNotFoundError:
+                st.error(f"Le modèle ALS n'a pas été trouvé au chemin : {model_path}")
+                st.stop()
+            except Exception as e:
+                st.error(f"Erreur lors du chargement ou de l'évaluation du modèle ALS : {e}")
+                st.stop()
+
 
     elif choice == "NER":
         st.header("🧠 Extraction des Entités Nommées (NER)")
@@ -405,14 +415,28 @@ if uploaded_file:
         pandas_df = pandas_df.dropna(subset=['review_text'])
 
         try:
-            lr_model = joblib.load("fichiers/lr_model.pkl")
-            tfidf_m = joblib.load("fichiers/tfidf_vectorizer.pkl")
-            label_encoder = joblib.load("fichiers/label_encoder.pkl")
+            # Définir working directory (dossier du script)
+            working_dir = os.path.dirname(os.path.abspath(__file__))
+
+            # Construire chemins absolus
+            lr_model_path = os.path.join(working_dir, "fichiers", "lr_model.pkl")
+            tfidf_path = os.path.join(working_dir, "fichiers", "tfidf_vectorizer.pkl")
+            label_enc_path = os.path.join(working_dir, "fichiers", "label_encoder.pkl")
+
+            # Charger les fichiers
+            lr_model = joblib.load(lr_model_path)
+            tfidf_m = joblib.load(tfidf_path)
+            label_encoder = joblib.load(label_enc_path)
             cat = label_encoder.classes_
+
+            st.success("Modèles chargés avec succès !")
+
+        except FileNotFoundError as fnf_error:
+            st.error(f"Fichier introuvable : {fnf_error}")
+            st.stop()
         except Exception as e:
             st.error(f"Erreur lors du chargement des modèles : {e}")
             st.stop()
-
         # Préparation des données pour évaluer les métriques
         X = tfidf_m.transform(pandas_df['review_text'])
         y = label_encoder.transform(pandas_df['Sentiment'])
@@ -455,12 +479,22 @@ if uploaded_file:
     elif choice == "Prediction avec XGBoost":
         st.title("Prédiction de sentiment avec XGBoost (modèle chargé)")
 
-        # Chargement modèle + TF-IDF + encodage
+        # Récupérer le dossier du script courant
+        working_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Construire les chemins absolus
+        model_path = os.path.join(working_dir, "fichiers", "xgboost_sentiment_model.json")
+        tfidf_path = os.path.join(working_dir, "fichiers", "tfidf_vectorizer.pkl")
+        label_enc_path = os.path.join(working_dir, "fichiers", "label_encoder.pkl")
+
+        # Charger les modèles/fichiers
         boost = xgb.Booster()
-        boost.load_model("fichiers/xgboost_sentiment_model.json")  # ← modèle sauvegardé
-        tfidf_m = joblib.load("fichiers/tfidf_vectorizer.pkl")  # ← vectorizer sauvegardé
-        label_encoder = joblib.load("fichiers/label_encoder.pkl")  # ← label encoder sauvegardé
+        boost.load_model(model_path)  # modèle XGBoost
+        tfidf_m = joblib.load(tfidf_path)  # vectorizer TF-IDF
+        label_encoder = joblib.load(label_enc_path)  # label encoder
         cat = label_encoder.classes_
+
+        st.success("Modèles chargés avec succès !")
 
         # Préparation DataFrame Spark
         df = df.withColumn("review_text", col("`reviews.text`"))
@@ -514,11 +548,26 @@ if uploaded_file:
     elif choice == "Prediction avec SVM":
         st.title("Prédiction de sentiment avec SVM (modèle chargé)")
 
-        # Chargement modèle + TF-IDF + encodage
-        model_svm=joblib.load("fichiers/svm_model.pkl")  # ← modèle sauvegardé
-        tfidf= joblib.load("fichiers/tfidf_vectorizer_svm.pkl")  # ← vectorizer sauvegardé
-        label_encoder = joblib.load("fichiers/label_encoder_svm.pkl")  # ← label encoder sauvegardé
-        cat = label_encoder.classes_
+        try:
+            working_dir = os.path.dirname(os.path.abspath(__file__))
+
+            svm_model_path = os.path.join(working_dir, "fichiers", "svm_model.pkl")
+            tfidf_path = os.path.join(working_dir, "fichiers", "tfidf_vectorizer_svm.pkl")
+            label_enc_path = os.path.join(working_dir, "fichiers", "label_encoder_svm.pkl")
+
+            model_svm = joblib.load(svm_model_path)
+            tfidf = joblib.load(tfidf_path)
+            label_encoder = joblib.load(label_enc_path)
+            cat = label_encoder.classes_
+
+            st.success("Modèles chargés avec succès !")
+
+        except FileNotFoundError as fnf_error:
+            st.error(f"Fichier introuvable : {fnf_error}")
+            st.stop()
+        except Exception as e:
+            st.error(f"Erreur lors du chargement des modèles : {e}")
+            st.stop()
 
         # Préparation DataFrame Spark
         df = df.withColumn("review_text", col("`reviews.text`"))
