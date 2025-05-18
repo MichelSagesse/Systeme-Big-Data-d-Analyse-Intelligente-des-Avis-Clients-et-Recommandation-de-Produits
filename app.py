@@ -85,10 +85,27 @@ if uploaded_file:
     st.subheader("Aperçu du Dataset")
     st.dataframe(df_pd.head())
 
-    # Menu latéral Streamlit
-    menu = ["Accueil", "Wordcloud & Clustering", "Système de Recommandation", "NER", "Analyse de Sentiment", "Traitement du texte", "Prédiction manuelle", "WordCloud par Sentiment","NGram","Prediction avec LogReg","Prediction avec XGBoost"]
+    menu = [
+    "Accueil", 
+    "Wordcloud & Clustering", 
+    "Système de Recommandation", 
+    "NER", 
+    "Analyse de Sentiment", 
+    "Traitement du texte", 
+    "Prédiction manuelle", 
+    "WordCloud par Sentiment",
+    "NGram",
+    "Prediction avec LogReg",
+    "Prediction avec XGBoost",
+    "Prediction avec SVM"]
 
-    choice = st.sidebar.radio("Sélectionner une option", menu)
+    stickers = ["🏠", "☁️", "🤖", "🔍", "📊", "📝", "🎯", "🌈", "🔡", "📈", "🚀", "⚔️"]
+
+    # Création d'une liste avec stickers
+    menu_with_stickers = [f"{stickers[i]} {menu[i]}" for i in range(len(menu))]
+
+    # Affichage dans la sidebar avec radio
+    choice = st.sidebar.radio("Sélectionner une option", menu_with_stickers)
 
     if choice == "Accueil":
         st.subheader("Bienvenue sur l'application Web Mining et Text Mining !")
