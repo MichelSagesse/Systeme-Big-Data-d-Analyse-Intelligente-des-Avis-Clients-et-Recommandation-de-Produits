@@ -191,7 +191,7 @@ if uploaded_file:
         
     elif choice == "☁️ Wordcloud & Clustering": 
         st.title("☁️ Wordcloud & Clustering")
-        st.image("Images/cluster_wordcloud.png", width=100)
+        st.image("images/cluster_wordcloud.png", width=100)
 
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
@@ -624,7 +624,7 @@ if uploaded_file:
 
     elif choice == "📊 Prédiction LogReg":
         st.title("📊 Prédiction de sentiment avec Logistic Regression")
-        st.image("Images/logReg.png", width=100)
+        st.image("images/logReg.png", width=100)
         
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
