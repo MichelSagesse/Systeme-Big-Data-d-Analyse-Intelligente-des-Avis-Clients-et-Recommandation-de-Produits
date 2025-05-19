@@ -271,46 +271,56 @@ if uploaded_file:
         max_features = st.sidebar.slider("Nombre max de features", 1000, 5000, 2000)
 
         try:
-            # Chargement des modèles avec une barre de progression
-            with st.spinner("Chargement des modèles en cours..."):
+            models_dir = os.path.join(os.path.dirname(__file__), "fichiers")
+            if not os.path.exists(models_dir):
+                raise FileNotFoundError(f"Dossier 'fichiers' introuvable à l'emplacement: {models_dir}")
+
+            required_models = {
+                "count_vectorizer.joblib": "Vectorizer",
+                "tfidf.joblib": "TF-IDF", 
+                "lda_model.joblib": "LDA",
+                "kmeans_model.joblib": "KMeans",
+                "svd_model.joblib": "SVD",
+                "tsne_model.pkl": "t-SNE"
+            }
+
+            loaded_models = {}
+            
+            with st.spinner("Chargement des modèles..."):
                 progress_bar = st.progress(0)
-                
-                models_dir = "fichiers"
-                models_to_load = [
-                    ("count_vectorizer.joblib", "Vectorizer"),
-                    ("tfidf.joblib", "TF-IDF"),
-                    ("lda_model.joblib", "Modèle LDA"),
-                    ("kmeans_model.joblib", "Modèle KMeans"),
-                    ("svd_model.joblib", "Modèle SVD"),
-                    ("tsne_model.pkl", "Modèle t-SNE")
-                ]
-                
-                loaded_models = {}
-                
-                for i, (model_file, model_name) in enumerate(models_to_load):
-                    progress_bar.progress((i + 1) / len(models_to_load), text=f"Chargement {model_name}...")
+                for i, (file, name) in enumerate(required_models.items()):
+                    progress_bar.progress((i + 1) / len(required_models), text=f"Chargement {name}...")
+                    model_path = os.path.join(models_dir, file)
                     
-                    model_path = os.path.join(models_dir, model_file)
                     if not os.path.exists(model_path):
-                        raise FileNotFoundError(f"Fichier modèle non trouvé: {model_path}")
+                        st.error(f"Fichier manquant: {file}")
+                        st.info(f"Veuillez placer le fichier {file} dans le dossier 'fichiers'")
+                        continue
                     
-                    if model_file.endswith('.pkl'):
-                        with open(model_path, "rb") as f:
-                            loaded_models[model_name] = pickle.load(f)
-                    else:
-                        loaded_models[model_name] = joblib.load(model_path)
+                    try:
+                        if file.endswith('.pkl'):
+                            with open(model_path, 'rb') as f:
+                                loaded_models[name] = pickle.load(f)
+                        else:
+                            loaded_models[name] = joblib.load(model_path)
+                    except Exception as e:
+                        st.error(f"Erreur lors du chargement de {file}: {str(e)}")
+                        continue
                 
                 progress_bar.empty()
-                st.success("✅ Tous les modèles ont été chargés avec succès !")
-                
-                # Attribution des modèles chargés
-                cv = loaded_models["Vectorizer"]
-                idf_m = loaded_models["TF-IDF"]
-                lda_m = loaded_models["Modèle LDA"]
-                kmean_m = loaded_models["Modèle KMeans"]
-                svd_v = loaded_models["Modèle SVD"]
-                tnse_v = loaded_models["Modèle t-SNE"]
 
+            # Vérification que tous les modèles sont chargés
+            if len(loaded_models) != len(required_models):
+                st.error("Certains modèles n'ont pas pu être chargés. Voir les erreurs ci-dessus.")
+                st.stop()
+
+            # Suite du traitement...
+            cv = loaded_models["Vectorizer"]
+            idf_m = loaded_models["TF-IDF"]
+            lda_m = loaded_models["LDA"]
+            kmean_m = loaded_models["KMeans"] 
+            svd_v = loaded_models["SVD"]
+            tnse_v = loaded_models["t-SNE"]
             # Transformation
             with st.spinner("Préparation des données..."):
                 tf = cv.transform(texts)
