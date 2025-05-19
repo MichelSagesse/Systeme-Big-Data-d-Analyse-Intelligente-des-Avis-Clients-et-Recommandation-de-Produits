@@ -97,7 +97,7 @@ st.markdown("""
 
 # Sidebar avec image logo
 with st.sidebar:
-    st.image("images/image.png", width=100)
+    st.image("images/nav.png", width=100)
     st.markdown("<h2 style='text-align: center;'>Navigation</h2>", unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader("📤 Upload your CSV file", type=["csv"])
