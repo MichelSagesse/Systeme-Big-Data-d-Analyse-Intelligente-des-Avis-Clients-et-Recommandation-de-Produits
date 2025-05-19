@@ -259,8 +259,6 @@ if uploaded_file:
 
         texts = df_pd['reviews.text'].fillna("").astype(str)
 
-
-
         # WordCloud
         st.subheader("🔵 WordCloud Global")
         with st.spinner("Génération du WordCloud..."):
@@ -273,30 +271,55 @@ if uploaded_file:
         max_features = st.sidebar.slider("Nombre max de features", 1000, 5000, 2000)
 
         try:
-            # Chargement des modèles
-            with st.spinner("Chargement des modèles sauvegardés..."):
-                models_dir = "fichiers"  # Dossier où sont stockés les modèles
-
-                # Chargement via joblib
-                cv = joblib.load(os.path.join(models_dir, "count_vectorizer.joblib"))
-                idf_m = joblib.load(os.path.join(models_dir, "tfidf.joblib"))
-                lda_m = joblib.load(os.path.join(models_dir, "lda_model.joblib"))
-                kmean_m = joblib.load(os.path.join(models_dir, "kmeans_model.joblib"))
-                svd_v = joblib.load(os.path.join(models_dir, "svd_model.joblib"))
-
-                # Chargement via pickle
-                with open(os.path.join(models_dir, "tsne_model.pkl"), "rb") as f:
-                    tnse_v = pickle.load(f)
-
-            st.success("✅ Modèles chargés avec succès !")
+            # Chargement des modèles avec une barre de progression
+            with st.spinner("Chargement des modèles en cours..."):
+                progress_bar = st.progress(0)
+                
+                models_dir = "fichiers"
+                models_to_load = [
+                    ("count_vectorizer.joblib", "Vectorizer"),
+                    ("tfidf.joblib", "TF-IDF"),
+                    ("lda_model.joblib", "Modèle LDA"),
+                    ("kmeans_model.joblib", "Modèle KMeans"),
+                    ("svd_model.joblib", "Modèle SVD"),
+                    ("tsne_model.pkl", "Modèle t-SNE")
+                ]
+                
+                loaded_models = {}
+                
+                for i, (model_file, model_name) in enumerate(models_to_load):
+                    progress_bar.progress((i + 1) / len(models_to_load), text=f"Chargement {model_name}...")
+                    
+                    model_path = os.path.join(models_dir, model_file)
+                    if not os.path.exists(model_path):
+                        raise FileNotFoundError(f"Fichier modèle non trouvé: {model_path}")
+                    
+                    if model_file.endswith('.pkl'):
+                        with open(model_path, "rb") as f:
+                            loaded_models[model_name] = pickle.load(f)
+                    else:
+                        loaded_models[model_name] = joblib.load(model_path)
+                
+                progress_bar.empty()
+                st.success("✅ Tous les modèles ont été chargés avec succès !")
+                
+                # Attribution des modèles chargés
+                cv = loaded_models["Vectorizer"]
+                idf_m = loaded_models["TF-IDF"]
+                lda_m = loaded_models["Modèle LDA"]
+                kmean_m = loaded_models["Modèle KMeans"]
+                svd_v = loaded_models["Modèle SVD"]
+                tnse_v = loaded_models["Modèle t-SNE"]
 
             # Transformation
-            tf = cv.transform(texts)
-            tfidf = idf_m.transform(texts)
+            with st.spinner("Préparation des données..."):
+                tf = cv.transform(texts)
+                tfidf = idf_m.transform(texts)
 
             # LDA
             st.subheader("🔄 Modélisation thématique (LDA)")
-            lda_topics = lda_m.transform(tf)
+            with st.spinner("Calcul des topics..."):
+                lda_topics = lda_m.transform(tf)
 
             st.subheader(f"🎯 Top 15 mots par Topic (LDA - {lda_m.n_components} topics)")
             feature_names = cv.get_feature_names_out()
@@ -313,7 +336,8 @@ if uploaded_file:
 
             # Clustering KMeans
             st.subheader("🏷️ Clustering avec KMeans")
-            kmeans_labels = kmean_m.predict(tfidf)
+            with st.spinner("Application du clustering..."):
+                kmeans_labels = kmean_m.predict(tfidf)
 
             # Visualisation t-SNE
             st.subheader("🧩 Visualisation des clusters (t-SNE)")
@@ -334,8 +358,8 @@ if uploaded_file:
                 st.pyplot(fig)
 
         except Exception as e:
-            st.error(f"❌ Erreur lors du chargement ou de l'application des modèles : {e}")
-
+            st.error(f"❌ Erreur lors du chargement ou de l'application des modèles : {str(e)}")
+            st.warning("Veuillez vérifier que tous les fichiers de modèle sont présents dans le dossier 'fichiers'")
     elif choice == "🎯 Système de Recommandation":
         st.header("🎯 Système de Recommandation ALS")
         safe_image_display(
@@ -575,15 +599,30 @@ if uploaded_file:
                     if sentiment > 0:
                         with col1:
                             st.metric(label="Sentiment", value="Positif", delta=f"Polarité: {sentiment:.2f}")
-                            st.image("images/positif.avif", width=100)
+                            safe_image_display(
+                                "images/positif.avif",
+                                width=100,
+                                alt_text="Sentiment Positif",
+                                fallback_url="https://cdn-icons-png.flaticon.com/512/4476/4476156.png"
+                            )
                     elif sentiment < 0:
                         with col2:
                             st.metric(label="Sentiment", value="Négatif", delta=f"Polarité: {sentiment:.2f}")
-                            st.image("images/negatif.jpg", width=100)
+                            safe_image_display(
+                                "images/negatif.jpg",
+                                width=100,
+                                alt_text="Sentiment Négatif",
+                                fallback_url="https://cdn-icons-png.flaticon.com/512/4476/4476155.png"
+                            )
                     else:
                         with col3:
                             st.metric(label="Sentiment", value="Neutre", delta=f"Polarité: {sentiment:.2f}")
-                            st.image("images/neutre.png", width=100)
+                            safe_image_display(
+                                "images/neutre.png",
+                                width=100,
+                                alt_text="Sentiment Neutre",
+                                fallback_url="https://cdn-icons-png.flaticon.com/512/4476/4476159.png"
+                            )
                     
                     # Visualisation de la polarité
                     fig, ax = plt.subplots(figsize=(8, 2))
@@ -593,11 +632,10 @@ if uploaded_file:
                     ax.set_title("Score de Polarité")
                     ax.axis('off')
                     st.pyplot(fig)
-
     elif choice == "🌈 WordCloud par Sentiment":
         st.header("🌈 WordCloud par Sentiment")
         safe_image_display(
-            "images/wordcloud.png",
+            "images/wordcloud.jpg",
             width=100,
             alt_text="WordCloud par Sentiment"
         )  
