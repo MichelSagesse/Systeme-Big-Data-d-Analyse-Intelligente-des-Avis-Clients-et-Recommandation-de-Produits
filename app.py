@@ -95,11 +95,22 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Sidebar avec image logo
-with st.sidebar:
-    st.image("images/nav.png", width=100)
-    st.markdown("<h2 style='text-align: center;'>Navigation</h2>", unsafe_allow_html=True)
+# Sidebar avec gestion robuste de l'image
+image_path = os.path.join(os.path.dirname(__file__), "images", "nav.png")
 
+with st.sidebar:
+    try:
+        if os.path.exists(image_path):
+            img = Image.open(image_path)
+            st.image(img, width=100)
+        else:
+            st.image("images/logo_backup.png", width=100) 
+    except Exception as e:
+        st.image("https://via.placeholder.com/100x50.png?text=ENSA+Tetouan", 
+                width=100)
+        st.warning(f"Image nav.png non chargée: {str(e)}")
+    
+    st.markdown("<h2 style='text-align: center;'>Navigation</h2>", unsafe_allow_html=True)
 uploaded_file = st.file_uploader("📤 Upload your CSV file", type=["csv"])
 
 if uploaded_file:
