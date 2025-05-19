@@ -277,8 +277,7 @@ if uploaded_file:
 
             required_models = {
                 "count_vectorizer.joblib": "Vectorizer",
-                "tfidf.joblib": "TF-IDF", 
-                "lda_model.joblib": "LDA",
+                "tfidf.joblib": "TF-IDF",
                 "kmeans_model.joblib": "KMeans",
                 "svd_model.joblib": "SVD",
                 "tsne_model.pkl": "t-SNE"
@@ -286,7 +285,7 @@ if uploaded_file:
 
             loaded_models = {}
             
-            with st.spinner("Chargement des modèles..."):
+            with st.spinner("Chargement des modèles pré-entraînés..."):
                 progress_bar = st.progress(0)
                 for i, (file, name) in enumerate(required_models.items()):
                     progress_bar.progress((i + 1) / len(required_models), text=f"Chargement {name}...")
@@ -309,33 +308,38 @@ if uploaded_file:
                 
                 progress_bar.empty()
 
-            # Vérification que tous les modèles sont chargés
-            if len(loaded_models) != len(required_models):
+            # Vérification que les modèles essentiels sont chargés
+            if len(loaded_models) < len(required_models):
                 st.error("Certains modèles n'ont pas pu être chargés. Voir les erreurs ci-dessus.")
                 st.stop()
 
-            # Suite du traitement...
+            # Récupération des modèles chargés
             cv = loaded_models["Vectorizer"]
             idf_m = loaded_models["TF-IDF"]
-            lda_m = loaded_models["LDA"]
             kmean_m = loaded_models["KMeans"] 
             svd_v = loaded_models["SVD"]
             tnse_v = loaded_models["t-SNE"]
-            # Transformation
+
+            # Transformation des données
             with st.spinner("Préparation des données..."):
                 tf = cv.transform(texts)
                 tfidf = idf_m.transform(texts)
 
-            # LDA
+            # ENTRAÎNEMENT DU MODÈLE LDA SEULEMENT
             st.subheader("🔄 Modélisation thématique (LDA)")
-            with st.spinner("Calcul des topics..."):
-                lda_topics = lda_m.transform(tf)
-
-            st.subheader(f"🎯 Top 15 mots par Topic (LDA - {lda_m.n_components} topics)")
+            with st.spinner("Entraînement du modèle LDA..."):
+                lda = LatentDirichletAllocation(n_components=n_topics, learning_method='online', random_state=42)
+                lda.fit(tf)
+                lda_topics = lda.transform(tf)
+            
+            st.success("Modèle LDA entraîné avec succès !")
+            
+            # Affichage des topics LDA
+            st.subheader(f"🎯 Top 15 mots par Topic (LDA - {n_topics} topics)")
             feature_names = cv.get_feature_names_out()
 
             cols = st.columns(2)
-            for idx, topic in enumerate(lda_m.components_):
+            for idx, topic in enumerate(lda.components_):
                 with cols[idx % 2]:
                     st.markdown(f"""
                     <div style="background-color:#e9f7ef;padding:15px;border-radius:10px;margin-bottom:10px;">
@@ -344,13 +348,12 @@ if uploaded_file:
                     </div>
                     """, unsafe_allow_html=True)
 
-            # Clustering KMeans
-            st.subheader("🏷️ Clustering avec KMeans")
+            # Utilisation des autres modèles (pré-entraînés, non ré-entraînés)
+            st.subheader("🏷️ Clustering avec KMeans (modèle pré-entraîné)")
             with st.spinner("Application du clustering..."):
                 kmeans_labels = kmean_m.predict(tfidf)
 
-            # Visualisation t-SNE
-            st.subheader("🧩 Visualisation des clusters (t-SNE)")
+            st.subheader("🧩 Visualisation des clusters (t-SNE avec modèles pré-entraînés)")
             with st.spinner("Réduction de dimension avec SVD et t-SNE..."):
                 reduced = svd_v.transform(tfidf)
                 tsne_results = tnse_v.fit_transform(reduced)
@@ -368,8 +371,8 @@ if uploaded_file:
                 st.pyplot(fig)
 
         except Exception as e:
-            st.error(f"❌ Erreur lors du chargement ou de l'application des modèles : {str(e)}")
-            st.warning("Veuillez vérifier que tous les fichiers de modèle sont présents dans le dossier 'fichiers'")
+            st.error(f"❌ Erreur lors du traitement : {str(e)}")
+            st.warning("Veuillez vérifier vos données et les fichiers de modèles")
     elif choice == "🎯 Système de Recommandation":
         st.header("🎯 Système de Recommandation ALS")
         safe_image_display(
