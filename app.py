@@ -56,6 +56,40 @@ def load_css():
     else:
         st.warning("Fichier CSS non trouvé, utilisation des styles par défaut")
 
+def safe_image_display(image_path, width, fallback_url=None, alt_text=None):
+    """
+    Affiche une image de manière sécurisée avec plusieurs fallbacks
+    Args:
+        image_path: Chemin relatif vers l'image
+        width: Largeur d'affichage
+        fallback_url: URL de remplacement optionnelle
+        alt_text: Texte alternatif pour le fallback
+    """
+    try:
+        full_path = os.path.join(os.path.dirname(__file__), image_path)
+        if os.path.exists(full_path):
+            img = Image.open(full_path)
+            st.image(img, width=width)
+        else:
+            raise FileNotFoundError
+    except Exception as e:
+        if fallback_url:
+            st.image(fallback_url, width=width)
+        else:
+            st.markdown(f"""
+            <div style="width:{width}px; height:{width}px; 
+                        background-color:#f0f2f6; 
+                        display:flex; 
+                        align-items:center; 
+                        justify-content:center;
+                        border-radius:8px;
+                        margin-bottom:10px;">
+                <p style="color:#666; text-align:center;">{alt_text or 'Image non disponible'}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        st.warning(f"Image {image_path} non chargée: {str(e)}", icon="⚠️")
+
+
 # Appelez cette fonction après st.set_page_config()
 load_css()
 
@@ -96,20 +130,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Sidebar avec gestion robuste de l'image
-image_path = os.path.join(os.path.dirname(__file__), "images", "nav.png")
-
 with st.sidebar:
-    try:
-        if os.path.exists(image_path):
-            img = Image.open(image_path)
-            st.image(img, width=100)
-        else:
-            st.image("images/logo_backup.png", width=100) 
-    except Exception as e:
-        st.image("https://via.placeholder.com/100x50.png?text=ENSA+Tetouan", 
-                width=100)
-        st.warning(f"Image nav.png non chargée: {str(e)}")
-    
+    safe_image_display(
+        "images/nav.png",
+        width=100,
+        fallback_url="https://via.placeholder.com/100x50.png?text=ENSA+Tetouan",
+        alt_text="Logo Navigation"
+    )
     st.markdown("<h2 style='text-align: center;'>Navigation</h2>", unsafe_allow_html=True)
 uploaded_file = st.file_uploader("📤 Upload your CSV file", type=["csv"])
 
@@ -127,22 +154,21 @@ if uploaded_file:
 
     # Menu latéral Streamlit
     menu = [
-        "🏠 Accueil", 
-        "☁️ Wordcloud & Clustering", 
-        "🎯 Système de Recommandation", 
-        "🧠 Extraction d'Entités", 
-        "😊 Analyse de Sentiment", 
-        "✂️ Traitement du texte", 
-        "🔮 Prédiction manuelle",
-        "🌈 WordCloud par Sentiment",
-        "🔢 Analyse N-Gram",
-        "📊 Prédiction LogReg",
-        "🌳 Prédiction XGBoost",
-        "⚡ Prédiction SVM"
-    ]
+    "🏠 Accueil", 
+    "☁️ Wordcloud & Clustering", 
+    "🎯 Système de Recommandation", 
+    "🧠 Extraction d'Entités", 
+    "😊 Analyse de Sentiment", 
+    "✂️ Traitement du texte", 
+    "🔮 Prédiction manuelle",
+    "🌈 WordCloud par Sentiment",
+    "🔢 Analyse N-Gram",
+    "📊 Prédiction LogReg",
+    "🌳 Prédiction XGBoost",
+    "⚡ Prédiction SVM"
+]
 
     choice = st.sidebar.radio("Sélectionnez une option", menu)
-
     if choice == "🏠 Accueil":
         st.subheader("Bienvenue sur l'application Web Mining et Text Mining !")
         st.markdown("""
@@ -161,21 +187,34 @@ if uploaded_file:
         
         col1, col2 = st.columns(2)
         with col1:
-            st.image("https://www.uplix.fr/app/uploads/2021/07/Google-NLP-front-1-1024x512.png", width=200)
+            safe_image_display(
+                "images/nlp-overview.png",
+                width=200,
+                fallback_url="https://www.uplix.fr/app/uploads/2021/07/Google-NLP-front-1-1024x512.png",
+                alt_text="Analyse NLP"
+            )
             st.markdown("**Analyse textuelle avancée** avec NLP et machine learning")
         
         with col2:
-            st.image("images/data-visualization.webp", width=200)
+            safe_image_display(
+                "images/data-visualization.webp",
+                width=200,
+                fallback_url="https://datavizcatalogue.com/methods/images/hero_images/line_graph.png",
+                alt_text="Visualisation"
+            )
             st.markdown("**Visualisations interactives** pour explorer vos données")
         
-        # Nouvelle section pour les contributeurs
         st.markdown("---")
         st.subheader("👥 Équipe du Projet")
         
         col_contrib1, col_contrib2 = st.columns(2)
         
         with col_contrib1:
-            st.image("images/michel.jpeg", width=150, caption="Prénom NOM")
+            safe_image_display(
+                "images/michel.jpeg",
+                width=150,
+                alt_text="Michel Sagesse Kolié"
+            )
             st.markdown("""
             <div style="text-align:center;">
                 <h4>Michel Sagesse Kolié</h4>
@@ -185,12 +224,16 @@ if uploaded_file:
             """, unsafe_allow_html=True)
         
         with col_contrib2:
-            st.image("images/kinda.jpeg", width=150, caption="Prénom NOM")
+            safe_image_display(
+                "images/kinda.jpg",
+                width=150,
+                alt_text="Abdoul Latif Kinda"
+            )
             st.markdown("""
             <div style="text-align:center;">
                 <h4>Abdoul Latif Kinda</h4>
                 <p>Data Science|IA & Big data</p>
-                <p>École:École: ENSA Tetouan</p>
+                <p>École: ENSA Tetouan</p>
             </div>
             """, unsafe_allow_html=True)
         
@@ -199,10 +242,14 @@ if uploaded_file:
             <p style="text-align:center;">Projet réalisé dans le cadre du cours de Web Mining & Text Analysis</p>
         </div>
         """, unsafe_allow_html=True)
-        
+            
     elif choice == "☁️ Wordcloud & Clustering": 
         st.title("☁️ Wordcloud & Clustering")
-        st.image("images/cluster_wordcloud.png", width=100)
+        safe_image_display(
+            "images/wordcloud.jpg",
+            width=100,
+            alt_text="Wordcloud & Clustering"
+        )
 
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
@@ -211,6 +258,8 @@ if uploaded_file:
             """)
 
         texts = df_pd['reviews.text'].fillna("").astype(str)
+
+
 
         # WordCloud
         st.subheader("🔵 WordCloud Global")
@@ -289,8 +338,11 @@ if uploaded_file:
 
     elif choice == "🎯 Système de Recommandation":
         st.header("🎯 Système de Recommandation ALS")
-        st.image("images/ampoule.jpg", width=100)
-        
+        safe_image_display(
+            "images/ampoule.jpg",
+            width=100,
+            alt_text="Système de Recommandation"
+        )
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
             Ce système de recommandation utilise l'algorithme ALS (Alternating Least Squares)
@@ -353,8 +405,11 @@ if uploaded_file:
 
     elif choice == "🧠 Extraction d'Entités":
         st.header("🧠 Extraction des Entités Nommées (NER)")
-        st.image("images/Spacy_ner.jpg", width=100)
-        
+        safe_image_display(
+            "images/Spacy_ner.jpg",
+            width=100,
+            alt_text="Extraction d'Entités"
+        )
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
             L'extraction d'entités nommées identifie et classe les éléments clés dans le texte
@@ -387,8 +442,11 @@ if uploaded_file:
 
     elif choice == "😊 Analyse de Sentiment":
         st.header("💬 Analyse de Sentiment")
-        st.image("images/sentiment.png", width=100)
-
+        safe_image_display(
+            "images/sentiment.png",
+            width=100,
+            alt_text="Analyse de Sentiment"
+        )
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
             Analysez la polarité des avis en fonction des notes attribuées.
@@ -443,8 +501,11 @@ if uploaded_file:
 
     elif choice == "✂️ Traitement du texte":
         st.header("📝 Prétraitement du texte")
-        st.image("images/texte", width=100)
-        
+        safe_image_display(
+            "images/texte.png",
+            width=100,
+            alt_text="Traitement du texte"
+        )
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
             Cette section applique les étapes standard de NLP:
@@ -489,8 +550,11 @@ if uploaded_file:
 
     elif choice == "🔮 Prédiction manuelle":
         st.header("🔮 Prédiction manuelle des sentiments")
-        st.image("images/svm.png", width=100)
-        
+        safe_image_display(
+            "images/svm.png",
+            width=100,
+            alt_text="Prédiction manuelle"
+        )
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
             Analysez en temps réel la polarité d'un texte saisi.
@@ -532,8 +596,11 @@ if uploaded_file:
 
     elif choice == "🌈 WordCloud par Sentiment":
         st.header("🌈 WordCloud par Sentiment")
-        st.image("images/wordcloud.png", width=100)
-        
+        safe_image_display(
+            "images/wordcloud.png",
+            width=100,
+            alt_text="WordCloud par Sentiment"
+        )  
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
             Visualisez les mots les plus fréquents pour chaque catégorie de sentiment.
@@ -574,8 +641,11 @@ if uploaded_file:
 
     elif choice == "🔢 Analyse N-Gram":
         st.header("🔢 Analyse des N-Grams")
-        st.image("images/n-grams.jpg", width=100)
-        
+        safe_image_display(
+            "images/n-grams.jpg",
+            width=100,
+            alt_text="Analyse N-Gram"
+        )
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
             Identifiez les séquences de mots les plus fréquentes (bigrammes, trigrammes).
@@ -635,8 +705,11 @@ if uploaded_file:
 
     elif choice == "📊 Prédiction LogReg":
         st.title("📊 Prédiction de sentiment avec Logistic Regression")
-        st.image("images/logReg.png", width=100)
-        
+        safe_image_display(
+            "images/logReg.png",
+            width=100,
+            alt_text="Régression Logistique"
+        )
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
             Ce modèle utilise une régression logistique entraînée pour prédire le sentiment.
@@ -755,8 +828,11 @@ if uploaded_file:
 
     elif choice == "🌳 Prédiction XGBoost":
         st.title("🌳 Prédiction avec XGBoost")
-        st.image("images/XGBoost-Algorithm-2.webp", width=100)
-        
+        safe_image_display(
+            "images/XGBoost-Algorithm-2.webp",
+            width=100,
+            alt_text="XGBoost"
+        )
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
             Ce modèle utilise XGBoost, un algorithme de boosting d'arbres de décision,
@@ -862,8 +938,11 @@ if uploaded_file:
 
     elif choice == "⚡ Prédiction SVM":
         st.title("⚡ Prédiction avec SVM")
-        st.image("images/svm.png", width=100)
-        
+        safe_image_display(
+            "images/svm.png",
+            width=100,
+            alt_text="SVM"
+        )
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
             Ce modèle utilise un SVM (Support Vector Machine) linéaire,
