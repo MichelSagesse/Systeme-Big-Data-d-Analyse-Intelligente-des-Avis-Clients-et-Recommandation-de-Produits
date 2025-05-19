@@ -37,7 +37,7 @@ from pyspark.sql.types import StringType, ArrayType
 from pyspark.sql import functions as F
 import os
 from PIL import Image
-
+import pickle
 # Setup Streamlit
 st.set_page_config(
     page_title="Web Mining & Text Analysis",
@@ -97,7 +97,7 @@ st.markdown("""
 
 # Sidebar avec image logo
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/2103/2103633.png", width=100)
+    st.image("images/image.png", width=100)
     st.markdown("<h2 style='text-align: center;'>Navigation</h2>", unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader("📤 Upload your CSV file", type=["csv"])
@@ -150,95 +150,135 @@ if uploaded_file:
         
         col1, col2 = st.columns(2)
         with col1:
-            st.image("https://cdn-icons-png.flaticon.com/512/1995/1995463.png", width=200)
+            st.image("https://www.uplix.fr/app/uploads/2021/07/Google-NLP-front-1-1024x512.png", width=200)
             st.markdown("**Analyse textuelle avancée** avec NLP et machine learning")
         
         with col2:
-            st.image("https://cdn-icons-png.flaticon.com/512/2103/2103633.png", width=200)
+            st.image("images/data-visualization.webp", width=200)
             st.markdown("**Visualisations interactives** pour explorer vos données")
-    
-    elif choice == "☁️ Wordcloud & Clustering":
-        st.header("📚 Analyse Textuelle Avancée")
+        
+        # Nouvelle section pour les contributeurs
+        st.markdown("---")
+        st.subheader("👥 Équipe du Projet")
+        
+        col_contrib1, col_contrib2 = st.columns(2)
+        
+        with col_contrib1:
+            st.image("images/michel.jpeg", width=150, caption="Prénom NOM")
+            st.markdown("""
+            <div style="text-align:center;">
+                <h4>Michel Sagesse Kolié</h4>
+                <p>Data Science|IA & Big data</p>
+                <p>École: ENSA Tetouan</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col_contrib2:
+            st.image("images/kinda.jpeg", width=150, caption="Prénom NOM")
+            st.markdown("""
+            <div style="text-align:center;">
+                <h4>Abdoul Latif Kinda</h4>
+                <p>Data Science|IA & Big data</p>
+                <p>École:École: ENSA Tetouan</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div style="background-color:#e9f7ef;padding:15px;border-radius:10px;margin-top:20px;">
+            <p style="text-align:center;">Projet réalisé dans le cadre du cours de Web Mining & Text Analysis</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    elif choice == "☁️ Wordcloud & Clustering": 
+        st.title("☁️ Wordcloud & Clustering")
+        st.image("Images/cluster_wordcloud.png", width=100)
+
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
             Cette section vous permet de visualiser vos données textuelles sous forme de nuages de mots,
             d'identifier des thèmes via LDA, et de regrouper vos documents en clusters avec KMeans.
             """)
-        
+
         texts = df_pd['reviews.text'].fillna("").astype(str)
 
-        # Wordcloud
+        # WordCloud
         st.subheader("🔵 WordCloud Global")
         with st.spinner("Génération du WordCloud..."):
             all_text = " ".join(texts)
             plot_wordcloud(all_text, "Wordcloud général")
 
-        # Configuration des paramètres
+        # Paramètres utilisateur
         st.sidebar.subheader("Paramètres d'analyse")
         n_topics = st.sidebar.slider("Nombre de topics/clusters", 3, 15, 8)
         max_features = st.sidebar.slider("Nombre max de features", 1000, 5000, 2000)
 
-        # Vectorisation
-        with st.spinner("Vectorisation des textes..."):
-            cv = CountVectorizer(max_df=0.9, min_df=5, stop_words='english', max_features=max_features)
-            tf = cv.fit_transform(texts)
+        try:
+            # Chargement des modèles
+            with st.spinner("Chargement des modèles sauvegardés..."):
+                models_dir = "fichiers"  # Dossier où sont stockés les modèles
 
-            tfidf_vectorizer = TfidfVectorizer(max_df=0.9, min_df=5, stop_words='english', max_features=max_features)
-            tfidf = tfidf_vectorizer.fit_transform(texts)
+                # Chargement via joblib
+                cv = joblib.load(os.path.join(models_dir, "count_vectorizer.joblib"))
+                idf_m = joblib.load(os.path.join(models_dir, "tfidf.joblib"))
+                lda_m = joblib.load(os.path.join(models_dir, "lda_model.joblib"))
+                kmean_m = joblib.load(os.path.join(models_dir, "kmeans_model.joblib"))
+                svd_v = joblib.load(os.path.join(models_dir, "svd_model.joblib"))
 
-        # LDA
-        st.subheader("🔄 Modélisation thématique (LDA)")
-        with st.spinner("Entraînement du modèle LDA..."):
-            lda = LatentDirichletAllocation(n_components=n_topics, learning_method='online', random_state=42)
-            lda.fit(tf)
-            lda_topics = lda.transform(tf)
-        
-        st.success("Modèle LDA entraîné avec succès !")
-        
-        # Affichage des topics
-        st.subheader(f"🎯 Top 15 mots par Topic (LDA - {n_topics} topics)")
-        feature_names = cv.get_feature_names_out()
-        
-        cols = st.columns(2)
-        for idx, topic in enumerate(lda.components_):
-            with cols[idx % 2]:
-                st.markdown(f"""
-                <div style="background-color:#e9f7ef;padding:15px;border-radius:10px;margin-bottom:10px;">
-                    <h4>Topic {idx}</h4>
-                    <p>{", ".join([feature_names[i] for i in topic.argsort()[:-15 - 1:-1]])}</p>
-                </div>
-                """, unsafe_allow_html=True)
+                # Chargement via pickle
+                with open(os.path.join(models_dir, "tsne_model.pkl"), "rb") as f:
+                    tnse_v = pickle.load(f)
 
-        # Clustering KMeans
-        st.subheader("🏷️ Clustering avec KMeans")
-        with st.spinner("Entraînement du modèle KMeans..."):
-            kmeans = KMeans(n_clusters=n_topics, n_init=10, random_state=42).fit(tfidf)
-            kmeans_labels = kmeans.predict(tfidf)
+            st.success("✅ Modèles chargés avec succès !")
 
-        # Visualisation t-SNE
-        st.subheader("🧩 Visualisation des clusters (t-SNE)")
-        with st.spinner("Réduction de dimension avec t-SNE..."):
-            svd = TruncatedSVD(n_components=50).fit(tfidf)
-            reduced = svd.transform(tfidf)
+            # Transformation
+            tf = cv.transform(texts)
+            tfidf = idf_m.transform(texts)
 
-            tsne = TSNE(n_components=2, perplexity=25, n_iter=1000, random_state=42)
-            tsne_results = tsne.fit_transform(reduced)
+            # LDA
+            st.subheader("🔄 Modélisation thématique (LDA)")
+            lda_topics = lda_m.transform(tf)
 
-            fig, ax = plt.subplots(figsize=(12, 8))
-            colors = cm.rainbow(np.linspace(0, 1, n_topics))
+            st.subheader(f"🎯 Top 15 mots par Topic (LDA - {lda_m.n_components} topics)")
+            feature_names = cv.get_feature_names_out()
 
-            for i in range(n_topics):
-                idxs = np.where(kmeans_labels == i)
-                ax.scatter(tsne_results[idxs, 0], tsne_results[idxs, 1], 
-                          label=f'Cluster {i}', color=colors[i], alpha=0.6)
+            cols = st.columns(2)
+            for idx, topic in enumerate(lda_m.components_):
+                with cols[idx % 2]:
+                    st.markdown(f"""
+                    <div style="background-color:#e9f7ef;padding:15px;border-radius:10px;margin-bottom:10px;">
+                        <h4>Topic {idx}</h4>
+                        <p>{", ".join([feature_names[i] for i in topic.argsort()[:-15 - 1:-1]])}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-            plt.legend()
-            plt.title("Visualisation des Clusters (KMeans) - t-SNE")
-            st.pyplot(fig)
+            # Clustering KMeans
+            st.subheader("🏷️ Clustering avec KMeans")
+            kmeans_labels = kmean_m.predict(tfidf)
+
+            # Visualisation t-SNE
+            st.subheader("🧩 Visualisation des clusters (t-SNE)")
+            with st.spinner("Réduction de dimension avec SVD et t-SNE..."):
+                reduced = svd_v.transform(tfidf)
+                tsne_results = tnse_v.fit_transform(reduced)
+
+                fig, ax = plt.subplots(figsize=(12, 8))
+                colors = cm.rainbow(np.linspace(0, 1, kmean_m.n_clusters))
+
+                for i in range(kmean_m.n_clusters):
+                    idxs = np.where(kmeans_labels == i)
+                    ax.scatter(tsne_results[idxs, 0], tsne_results[idxs, 1], 
+                            label=f'Cluster {i}', color=colors[i], alpha=0.6)
+
+                plt.legend()
+                plt.title("Visualisation des Clusters (KMeans) - t-SNE")
+                st.pyplot(fig)
+
+        except Exception as e:
+            st.error(f"❌ Erreur lors du chargement ou de l'application des modèles : {e}")
 
     elif choice == "🎯 Système de Recommandation":
         st.header("🎯 Système de Recommandation ALS")
-        st.image("https://cdn-icons-png.flaticon.com/512/3652/3652191.png", width=100)
+        st.image("images/ampoule.jpg", width=100)
         
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
@@ -302,7 +342,7 @@ if uploaded_file:
 
     elif choice == "🧠 Extraction d'Entités":
         st.header("🧠 Extraction des Entités Nommées (NER)")
-        st.image("https://cdn-icons-png.flaticon.com/512/1995/1995485.png", width=100)
+        st.image("images/Spacy_ner.jpg", width=100)
         
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
@@ -336,7 +376,7 @@ if uploaded_file:
 
     elif choice == "😊 Analyse de Sentiment":
         st.header("💬 Analyse de Sentiment")
-        st.image("https://cdn-icons-png.flaticon.com/512/1995/1995488.png", width=100)
+        st.image("images/sentiment.png", width=100)
 
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
@@ -392,7 +432,7 @@ if uploaded_file:
 
     elif choice == "✂️ Traitement du texte":
         st.header("📝 Prétraitement du texte")
-        st.image("https://cdn-icons-png.flaticon.com/512/1995/1995481.png", width=100)
+        st.image("images/texte", width=100)
         
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
@@ -438,7 +478,7 @@ if uploaded_file:
 
     elif choice == "🔮 Prédiction manuelle":
         st.header("🔮 Prédiction manuelle des sentiments")
-        st.image("https://cdn-icons-png.flaticon.com/512/2103/2103633.png", width=100)
+        st.image("images/svm.png", width=100)
         
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
@@ -460,15 +500,15 @@ if uploaded_file:
                     if sentiment > 0:
                         with col1:
                             st.metric(label="Sentiment", value="Positif", delta=f"Polarité: {sentiment:.2f}")
-                            st.image("https://cdn-icons-png.flaticon.com/512/2276/2276931.png", width=100)
+                            st.image("images/positif.avif", width=100)
                     elif sentiment < 0:
                         with col2:
                             st.metric(label="Sentiment", value="Négatif", delta=f"Polarité: {sentiment:.2f}")
-                            st.image("https://cdn-icons-png.flaticon.com/512/2276/2276943.png", width=100)
+                            st.image("images/negatif.jpg", width=100)
                     else:
                         with col3:
                             st.metric(label="Sentiment", value="Neutre", delta=f"Polarité: {sentiment:.2f}")
-                            st.image("https://cdn-icons-png.flaticon.com/512/2276/2276956.png", width=100)
+                            st.image("images/neutre.png", width=100)
                     
                     # Visualisation de la polarité
                     fig, ax = plt.subplots(figsize=(8, 2))
@@ -481,7 +521,7 @@ if uploaded_file:
 
     elif choice == "🌈 WordCloud par Sentiment":
         st.header("🌈 WordCloud par Sentiment")
-        st.image("https://cdn-icons-png.flaticon.com/512/2103/2103663.png", width=100)
+        st.image("images/wordcloud.png", width=100)
         
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
@@ -523,7 +563,7 @@ if uploaded_file:
 
     elif choice == "🔢 Analyse N-Gram":
         st.header("🔢 Analyse des N-Grams")
-        st.image("https://cdn-icons-png.flaticon.com/512/1995/1995486.png", width=100)
+        st.image("images/n-grams.jpg", width=100)
         
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
@@ -584,7 +624,7 @@ if uploaded_file:
 
     elif choice == "📊 Prédiction LogReg":
         st.title("📊 Prédiction de sentiment avec Logistic Regression")
-        st.image("https://cdn-icons-png.flaticon.com/512/2103/2103633.png", width=100)
+        st.image("Images/logReg.png", width=100)
         
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
@@ -704,7 +744,7 @@ if uploaded_file:
 
     elif choice == "🌳 Prédiction XGBoost":
         st.title("🌳 Prédiction avec XGBoost")
-        st.image("https://cdn-icons-png.flaticon.com/512/2103/2103663.png", width=100)
+        st.image("images/XGBoost-Algorithm-2.webp", width=100)
         
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
@@ -811,7 +851,7 @@ if uploaded_file:
 
     elif choice == "⚡ Prédiction SVM":
         st.title("⚡ Prédiction avec SVM")
-        st.image("https://cdn-icons-png.flaticon.com/512/2103/2103633.png", width=100)
+        st.image("images/svm.png", width=100)
         
         with st.expander("ℹ️ À propos de cette section"):
             st.write("""
