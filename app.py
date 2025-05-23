@@ -613,7 +613,7 @@ if uploaded_file:
                         with col1:
                             st.metric(label="Sentiment", value="Positif", delta=f"Polarité: {sentiment:.2f}")
                             safe_image_display(
-                                "images/positif.avif",
+                                "images/positif.png",
                                 width=100,
                                 alt_text="Sentiment Positif",
                                 fallback_url="https://cdn-icons-png.flaticon.com/512/4476/4476156.png"
